@@ -1,0 +1,32 @@
+#pragma once
+
+#include <alsa/asoundlib.h>
+
+namespace alsa {
+
+enum class StreamMode {
+    SND_PCM_STREAM_PLAYBACK,
+    SND_PCM_STREAM_CAPTURE
+};
+
+enum class AccessMode {
+    SND_PCM_ACCESS_MMAP_INTERLEAVED,
+    SND_PCM_ACCESS_MMAP_NONINTERLEAVED,
+    SND_PCM_ACCESS_MMAP_COMPLEX,
+    SND_PCM_ACCESS_RW_INTERLEAVED,
+    SND_PCM_ACCESS_RW_NONINTERLEAVED
+};
+
+enum class PcmState {
+    SND_PCM_STATE_OPEN,
+    SND_PCM_STATE_SETUP,
+    SND_PCM_STATE_PREPARED,
+    SND_PCM_STATE_RUNNING,
+    SND_PCM_STATE_XRUN,
+    SND_PCM_STATE_DRAINING,
+    SND_PCM_STATE_PAUSED,
+    SND_PCM_STATE_SUSPENDED,
+    SND_PCM_STATE_DISCONNECTED
+};
+   
+} // namespace alsa
