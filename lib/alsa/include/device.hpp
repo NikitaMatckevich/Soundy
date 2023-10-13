@@ -1,9 +1,12 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <string_view>
+#include <thread>
 
+#include "callback.hpp"
 #include "states.hpp"
 #include "utils.hpp"
 
@@ -11,39 +14,43 @@ namespace alsa {
 
 struct Device {
 
-    inline Device(std::string_view deviceId, StreamMode mode)
-        : _device(initDevice(deviceId, mode), &snd_pcm_close)
+    inline Device(std::string_view deviceId, StreamUsageMode usageMode, StreamOpenMode openMode)
+        : _device(initDevice(deviceId, usageMode, openMode), &snd_pcm_close)
         , _hwParams(initHwParams(_device.get()), &snd_pcm_hw_params_free)
     {}
-   
-    Device& setResampleRate(std::uint32_t resampleRate);
-    Device& setAccess(AccessMode mode);
-    Device& setChannels(std::uint32_t numChannels);
-    Device& setRateNear(std::uint32_t rate);
-    void prepare();
+
+    void setResampleRate(uint32_t resampleRate);
+    void setAccessMode(AccessMode mode);
+    void setNumChannels(std::uint32_t numChannels);
+    uint32_t setRateNear(uint32_t rate);
+    uint32_t setBufferTimeNear(uint32_t bufferTime);
+    uint32_t setPeriodTimeNear(uint32_t periodTime);
+    void registerAudioCallback(const AudioCallback& callback);
+    void start();
+    void drain();
+    void drop();
 
 private:
     using NativeDeviceT = snd_pcm_t;
     using NativeDeviceHwParamsT = snd_pcm_hw_params_t;
     using NativeStreamT = snd_pcm_stream_t;
+    using NativeAccessModeT = snd_pcm_access_t;
     using NativeDeviceDeleterT = decltype(&snd_pcm_close);
     using NativeDeviceHwParamsDeleterT = decltype(&snd_pcm_hw_params_free);
 
     std::unique_ptr<NativeDeviceT, NativeDeviceDeleterT> _device;
     std::unique_ptr<NativeDeviceHwParamsT, NativeDeviceHwParamsDeleterT> _hwParams;
 
-    static inline NativeDeviceT* initDevice(std::string_view deviceId, StreamMode mode) {
-        NativeDeviceT* device = nullptr;
-        alsaCall(snd_pcm_open, "cannot open", &device, deviceId.data(), static_cast<NativeStreamT>(mode), 0);
-        return device;
-    }
-    
-    static inline NativeDeviceHwParamsT* initHwParams(NativeDeviceT* device) {
-        NativeDeviceHwParamsT* hwParams = nullptr;
-        alsaCall(snd_pcm_hw_params_malloc, "cannot allocate hw params", &hwParams);
-        alsaCall(snd_pcm_hw_params_any, "cannot set default hw params", device, hwParams);
-        return hwParams;
-    }
+    std::atomic<std::thread*> _audioThread;
+    AudioBuffer _audioBuffer;
+    AudioCallback _audioCallback;
+
+    void audioThreadLoop();
+
+    static NativeDeviceT* initDevice(std::string_view deviceId, StreamUsageMode usageMode, StreamOpenMode openMode);
+    static NativeDeviceHwParamsT* initHwParams(NativeDeviceT* device);
+    static void prepare(NativeDeviceT* device);
+    static int recovery(NativeDeviceT* device, int err);
 };
 
 } // namespace alsa

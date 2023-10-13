@@ -4,9 +4,14 @@
 
 namespace alsa {
 
-enum class StreamMode {
+enum class StreamUsageMode {
     SND_PCM_STREAM_PLAYBACK,
     SND_PCM_STREAM_CAPTURE
+};
+
+enum class StreamOpenMode {
+    NONBLOCK = SND_PCM_NONBLOCK,
+    ASYNC = SND_PCM_ASYNC
 };
 
 enum class AccessMode {
