@@ -6,11 +6,11 @@
 namespace alsa {
 
 struct AudioBuffer {
-    uint8_t* samples;
-    uint32_t periodTime;
-    uint32_t ringBufferTime;
+    uint64_t periodSize;
+    uint64_t ringBufferSize;
     uint32_t numChannels;
     uint32_t rate;
+    uint8_t* samples;
 };
 
 using AudioCallback = std::function<void(const AudioBuffer&, double&)>;

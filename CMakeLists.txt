@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.12)
-project(sound) # Replace with your project name
+project(sound)
 
 # Set C++ standard to C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_EXTENSIONS ON)
 
 # Define your source files
 set(SOUND_LIB_SOURCES 
@@ -13,7 +13,7 @@ set(SOUND_LIB_SOURCES
 )
 
 # Create a library from the ALSA source files
-add_library(soundy SHARED ${SOUND_LIB_SOURCES})
+add_library(soundy STATIC ${SOUND_LIB_SOURCES})
 
 # Add an include directory for the library
 target_include_directories(soundy PUBLIC lib/alsa/include)
@@ -36,7 +36,7 @@ endif ()
 # Create the executable
 add_executable(sound ${SOUND_EXE_SOURCES})
 
-# Add an include directory for the library
+# Add an include directory for the executable project
 target_include_directories(sound PUBLIC include)
 
 # Link the required libraries
