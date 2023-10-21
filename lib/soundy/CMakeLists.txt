@@ -17,10 +17,10 @@ set(TARGET_SOURCES
 )
 
 # Create a library from the ALSA source files
-add_library(${TARGET_ID} STATIC ${TARGET_SOURCES})
+add_library(${TARGET_ID} SHARED ${TARGET_SOURCES})
 
 # Add an include directory for the library
 target_include_directories(${TARGET_ID} PUBLIC include)
 
 # Link the required libraries
-target_link_libraries(soundy PRIVATE ${EXTRA_LIBS})
+target_link_libraries(${TARGET_ID} PRIVATE ${EXTRA_LIBS})
