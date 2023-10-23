@@ -21,10 +21,10 @@ int main() {
         std::cout << "Actual Buffer Size: " << d.getBufferSize() << " frames" << std::endl;
         std::cout << "Actual Period Size: " << d.getPeriodSize() << " frames" << std::endl;
 
-        alsa::AudioCallback callback = [&](const alsa::AudioBuffer& buffer, double& phase) {
-            constexpr const double pi = 3.14159265358979323846;
-            constexpr const double freq = 220;
-            double step = 2. * pi * freq / (double)buffer.rate;
+        alsa::AudioCallback callback = [&](const alsa::AudioBuffer& buffer, float& phase) {
+            constexpr const float pi = 3.14159265;
+            constexpr const float freq = 220;
+            float step = 2. * pi * freq / (float)buffer.rate;
             for (uint64_t i = 0; i < buffer.periodSize; i++) {
                 buffer.samples[i] = (int8_t)(std::sin(phase) * 255) - 128;
                 phase += step;

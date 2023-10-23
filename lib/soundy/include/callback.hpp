@@ -13,6 +13,6 @@ struct AudioBuffer {
     uint8_t* samples;
 };
 
-using AudioCallback = std::function<void(const AudioBuffer&, double&)>;
+using AudioCallback = std::function<void(const AudioBuffer&, float&)>;
 
 } // namespace alsa

@@ -140,7 +140,7 @@ void Device::prepare(Device::NativeDeviceT* device) {
 }
 
 void Device::audioThreadLoop() {
-    double phase = 0.;
+    float phase = 0.;
     _audioBuffer.samples = new uint8_t[_audioBuffer.periodSize * _audioBuffer.numChannels]; 
    
     while (_audioThread.load(std::memory_order_acquire)) {

@@ -10,8 +10,9 @@ add_subdirectory(lib/soundy)
 
 # Create the executable
 add_executable(sinewave test/sinewave.cpp)
-add_executable(synth    test/synth.cpp)
+add_executable(box      test/box.cpp)
 
 # Link the required libraries
-target_link_libraries(sinewave PRIVATE soundy ${EXTRA_LIBS})
-target_link_libraries(synth    PRIVATE soundy ${EXTRA_LIBS})
+target_link_libraries(sinewave PRIVATE soundy asound ${EXTRA_LIBS})
+target_link_libraries(box      PRIVATE soundy asound ${EXTRA_LIBS})
+
