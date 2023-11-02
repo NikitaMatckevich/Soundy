@@ -58,22 +58,20 @@ public:
                 }
                 return;
             }
-
-            constexpr const float pi = 3.14159265;
             float freq = frequencies[static_cast<int>(this->_note)]; // Frequency in Hz   
             float step = 2. * pi * freq / (float)buffer.rate;
             for (uint64_t i = 0; i < buffer.periodSize; i++) {
                 for (uint32_t ch = 0; ch < buffer.numChannels; ch++) {
                     buffer.samples[buffer.numChannels * i + ch] = (uint8_t)((std::sin(phase) + 1) * 127);
                 }
-                phase += step;
-                
+                phase += step;   
             }
 
             if (phase >= 2. * pi) {
                 phase -= 2. * pi;
             }
         };
+
         _device.registerAudioCallback(callback);
         _device.start(); 
     }
@@ -93,9 +91,7 @@ public:
 
         // Sleep for the duration of the note
         std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(noteDuration * 1000)));
-
-        _note = Note::NONE;
-    }
+   }
 
 };
 

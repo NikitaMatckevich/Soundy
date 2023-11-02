@@ -17,6 +17,7 @@ struct Device {
     inline Device(std::string_view deviceId, StreamUsageMode usageMode, StreamOpenMode openMode)
         : _device(initDevice(deviceId, usageMode, openMode), &snd_pcm_close)
         , _hwParams(initHwParams(_device.get()), &snd_pcm_hw_params_free)
+        , _audioThread(nullptr)
     {}
 
     AccessMode getAccessMode() const; 

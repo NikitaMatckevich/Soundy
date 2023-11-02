@@ -97,7 +97,7 @@ void Device::prepare() {
 
 void Device::start() {
     std::thread* oldThread = _audioThread.load(std::memory_order_relaxed);
-    if (oldThread == nullptr) {
+    if (oldThread != nullptr) {
         throw AlsaException(-EEXIST, "start already started device");
     }
   
@@ -163,6 +163,7 @@ void Device::audioThreadLoop() {
 }
 
 int Device::recovery(Device::NativeDeviceT* device, int err) {
+    printf("Recovery\n");
     if (err == -EPIPE) {    /* under-run */
         prepare(device);
     } else if (err == -ESTRPIPE) {
