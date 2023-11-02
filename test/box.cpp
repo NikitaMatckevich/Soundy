@@ -6,32 +6,18 @@
 #include <thread>
 #include <iostream>
 
+// Define the frequencies array
+float frequencies[] = {
+    261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 
+    415.30, 440.00, 466.16, 493.88, 523.25, 554.37, 587.33, 622.25, 
+    659.26, 698.46, 739.99, 783.99, 830.61, 880.00, 932.33, 987.77
+};
+
+// Define the Note enum class
 enum class Note {
-    C1    = 261,
-    CS1   = 277,
-    D1    = 293,
-    DS1   = 311,
-    E1    = 329,
-    F1    = 349,
-    FS1   = 369,
-    G1    = 391,
-    GS1   = 415,
-    A1    = 440,
-    AS1   = 466,
-    B1    = 493,
-    C2    = 523,
-    CS2   = 554,
-    D2    = 587,
-    DS2   = 622,
-    E2    = 659,
-    F2    = 698,
-    FS2   = 739,
-    G2    = 783,
-    GS2   = 830,
-    A2    = 880,
-    AS2   = 932,
-    B2    = 987,
-    NONE  = -1
+    C4, CS4, D4, DS4, E4, F4, FS4, G4, GS4, A4, AS4, B4,
+    C5, CS5, D5, DS5, E5, F5, FS5, G5, GS5, A5, AS5, B5,
+    NONE
 };
 
 enum class Duration {
@@ -64,7 +50,7 @@ public:
         _device.setBufferTimeNear(100000);
         _device.setPeriodTimeNear(100000);
         _device.prepare();
-
+        
         alsa::AudioCallback callback = [&](const alsa::AudioBuffer& buffer, float& phase) {
             if (this->_note == Note::NONE) {
                 for (uint64_t i = 0; i < buffer.periodSize; i++) {
@@ -73,16 +59,16 @@ public:
                 return;
             }
 
-            float freq = static_cast<float>(static_cast<int>(this->_note)); // Frequency in Hz    
-            float inversePeriod = freq / (float)buffer.rate ;
-
+            constexpr const float pi = 3.14159265;
+            float freq = frequencies[static_cast<int>(this->_note)]; // Frequency in Hz   
+            float step = 2. * pi * freq / (float)buffer.rate;
             for (uint64_t i = 0; i < buffer.periodSize; i++) {
-                buffer.samples[i] = (int8_t)(100 * (phase - std::floor(0.5f + phase)));
-                phase += inversePeriod;
+                buffer.samples[i] = (uint8_t)((std::sin(phase) + 1) * 127);
+                phase += step;
             }
 
-            if (phase >= 1) {
-                phase -= 1;
+            if (phase >= 2. * pi) {
+                phase -= 2. * pi;
             }
         };
         _device.registerAudioCallback(callback);
@@ -111,39 +97,39 @@ public:
 };
 
 void playSong() {
-    MusicBox b(40);
+    MusicBox b(55);
     // Tubular Bells by Mike Oldfield
-    for (int loopId = 0; loopId < 10; loopId++) {
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::A2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::B2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::G1, Duration::D16);
-        b.playNote(Note::A2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::C2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::D2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::B2, Duration::D16);
-        b.playNote(Note::C2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::A2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::B2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::G1, Duration::D16);
-        b.playNote(Note::A2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::C2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::D2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::B2, Duration::D16);
-        b.playNote(Note::C2, Duration::D16);
-        b.playNote(Note::E1, Duration::D16);
-        b.playNote(Note::B2, Duration::D16);
+    for (int loopId = 0; loopId < 8; loopId++) {
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::A4, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::B4, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::G4, Duration::D16);
+        b.playNote(Note::A4, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::C5, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::D5, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::B4, Duration::D16);
+        b.playNote(Note::C5, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::A4, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::B4, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::G4, Duration::D16);
+        b.playNote(Note::A4, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::C5, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::D5, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::B4, Duration::D16);
+        b.playNote(Note::C5, Duration::D16);
+        b.playNote(Note::E4, Duration::D16);
+        b.playNote(Note::B4, Duration::D16);
     }
 }
 
