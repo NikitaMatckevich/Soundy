@@ -45,7 +45,7 @@ public:
     {
         _device.setAccessMode(alsa::AccessMode::SND_PCM_ACCESS_RW_INTERLEAVED);
         _device.setResampleRate(1);
-        _device.setNumChannels(1);
+        _device.setNumChannels(2);
         _device.setRateNear(44100);
         _device.setBufferTimeNear(100000);
         _device.setPeriodTimeNear(100000);
@@ -63,8 +63,11 @@ public:
             float freq = frequencies[static_cast<int>(this->_note)]; // Frequency in Hz   
             float step = 2. * pi * freq / (float)buffer.rate;
             for (uint64_t i = 0; i < buffer.periodSize; i++) {
-                buffer.samples[i] = (uint8_t)((std::sin(phase) + 1) * 127);
+                for (uint32_t ch = 0; ch < buffer.numChannels; ch++) {
+                    buffer.samples[buffer.numChannels * i + ch] = (uint8_t)((std::sin(phase) + 1) * 127);
+                }
                 phase += step;
+                
             }
 
             if (phase >= 2. * pi) {
