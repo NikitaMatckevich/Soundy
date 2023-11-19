@@ -16,3 +16,15 @@ add_executable(box      test/box.cpp)
 target_link_libraries(sinewave PRIVATE soundy asound ${EXTRA_LIBS})
 target_link_libraries(box      PRIVATE soundy asound ${EXTRA_LIBS})
 
+# Set compiler flags based on build type
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("Debug build")
+    # Add debug-specific flags, settings, or definitions
+    target_compile_definitions(sinewave PRIVATE DEBUG_MODE)
+    target_compile_definitions(box      PRIVATE DEBUG_MODE)
+    # Add other debug-specific settings
+else()
+    message("Release build")
+    # Add release-specific flags, settings, or definitions
+    # Add other release-specific settings
+endif()
