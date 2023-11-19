@@ -1,13 +1,16 @@
+#include <chrono>
 #include <device.hpp>
 
 #include <cinttypes>
-#include <chrono>
+#include <array>
 #include <cmath>
 #include <thread>
+#include <atomic>
 #include <iostream>
+#include <cstdlib>
 
 // Define the frequencies array
-float frequencies[] = {
+static constexpr const float frequencies[] = {
     261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 
     415.30, 440.00, 466.16, 493.88, 523.25, 554.37, 587.33, 622.25, 
     659.26, 698.46, 739.99, 783.99, 830.61, 880.00, 932.33, 987.77
@@ -29,36 +32,93 @@ enum class Duration {
     D32 = 32
 };
 
+template <class T, uint8_t Order>
+struct SpScQueue {
+
+    constexpr static uint32_t getCapacity() {
+        return 1U << Order;
+    }
+
+    constexpr static uint32_t getMask() {
+        return getCapacity() - 1;
+    }
+
+    explicit SpScQueue(const T& defaultValue) : _defaultValue(defaultValue) {}
+    SpScQueue(const SpScQueue& other) = delete;
+    SpScQueue& operator=(const SpScQueue& other) = delete;
+
+    bool enqueue(const T& item) {
+        uint32_t currentTail = _tail.load(std::memory_order_relaxed);
+        uint32_t nextTail = nextIndex(currentTail);
+
+        if (nextTail == _head.load(std::memory_order_acquire)) {
+            return false; // Queue is full  
+        }
+
+        new (_buffer.data() + currentTail) T(item);
+         _tail.store(nextTail, std::memory_order_release);
+        return true;
+    }
+
+    T dequeue() {
+        uint32_t currentTail = _tail.load(std::memory_order_acquire); 
+        uint32_t currentHead = _head.load(std::memory_order_relaxed);
+        if (currentHead == currentTail) {
+            return _defaultValue; // Queue is empty
+        }
+
+        T item = _buffer[currentHead];
+
+        uint32_t nextHead = nextIndex(currentHead);
+        _head.store(nextHead, std::memory_order_release);
+        return item;
+    }
+
+private:    
+    std::array<T, getCapacity()>  _buffer;
+    T _defaultValue;
+
+    alignas(64) std::atomic<uint32_t> _head{0};
+    alignas(64) std::atomic<uint32_t> _tail{0};
+
+    uint32_t nextIndex(uint32_t current) const {
+        return (current + 1) & getMask();
+    }
+};
+
 class MusicBox {
     static constexpr const float pi = 3.14159265f;
     
     alsa::Device _device;
-    uint32_t _tempo;
- 
-    volatile Note _note;
+    SpScQueue<Note, 10> _notes;
+    uint64_t _expectedPeriodsPlayed = 0;
+    uint64_t _actualPeriodsPlayed = 0;
+    uint32_t _tempo; 
 
 public:
     MusicBox(uint32_t tempo) :
             _device("default", alsa::StreamUsageMode::SND_PCM_STREAM_PLAYBACK, alsa::StreamOpenMode::NONBLOCK),
-            _tempo(tempo),
-            _note(Note::NONE)
+            _notes(Note::NONE),
+            _tempo(tempo)
     {
         _device.setAccessMode(alsa::AccessMode::SND_PCM_ACCESS_RW_INTERLEAVED);
         _device.setResampleRate(1);
         _device.setNumChannels(2);
         _device.setRateNear(44100);
-        _device.setBufferTimeNear(100000);
+        _device.setBufferTimeNear(200000);
         _device.setPeriodTimeNear(100000);
         _device.prepare();
         
         alsa::AudioCallback callback = [&](const alsa::AudioBuffer& buffer, float& phase) {
-            if (this->_note == Note::NONE) {
+            Note note = this->_notes.dequeue();
+            if (note == Note::NONE) {
                 for (uint64_t i = 0; i < buffer.periodSize; i++) {
                     buffer.samples[i] = 0;
                 }
                 return;
             }
-            float freq = frequencies[static_cast<int>(this->_note)]; // Frequency in Hz   
+
+            float freq = frequencies[static_cast<int>(note)]; // Frequency in Hz
             float step = 2. * pi * freq / (float)buffer.rate;
             for (uint64_t i = 0; i < buffer.periodSize; i++) {
                 for (uint32_t ch = 0; ch < buffer.numChannels; ch++) {
@@ -70,13 +130,19 @@ public:
             if (phase >= 2. * pi) {
                 phase -= 2. * pi;
             }
+            
+            this->_actualPeriodsPlayed++;
         };
 
         _device.registerAudioCallback(callback);
-        _device.start(); 
+        _device.start();
     }
     
     ~MusicBox() {
+        while (_actualPeriodsPlayed < _expectedPeriodsPlayed) {
+            printf("actual periods = %lu, expected periods = %lu\n", _actualPeriodsPlayed, _expectedPeriodsPlayed);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
         _device.drain();
     }
 
@@ -85,18 +151,19 @@ public:
         float barDuration = 240.f / _tempo;
     
         // Calculate the total duration for the given note
-        float noteDuration = barDuration / static_cast<int>(duration);
-    
-        _note = note;
+        uint32_t noteDuration = (uint32_t)((1'000'000 / static_cast<int>(duration)) * barDuration);
+        uint32_t periodDuration = _device.getPeriodTime();
 
-        // Sleep for the duration of the note
-        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(noteDuration * 1000)));
+        for (uint32_t time = 0; time < noteDuration; time += periodDuration) {
+             _expectedPeriodsPlayed++;
+            while (!_notes.enqueue(note)) {}
+        }
    }
 
 };
 
 void playSong() {
-    MusicBox b(55);
+    MusicBox b(90);
     // Tubular Bells by Mike Oldfield
     for (int loopId = 0; loopId < 8; loopId++) {
         b.playNote(Note::E4, Duration::D16);
